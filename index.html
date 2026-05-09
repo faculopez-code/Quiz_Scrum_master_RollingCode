@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrum & Kanban Quiz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { background: #1a1a2e; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+    #app { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 4vh 4vw; }
+
+    /* ── SHARED ELEMENTS ── */
+    .card { background: #111827; border-radius: 16px; padding: clamp(1rem, 2.5vw, 1.8rem); width: 100%; }
+    .btn-primary { background: #4FC3F7; color: #0d1117; border: none; border-radius: 14px; padding: clamp(0.8rem,1.8vw,1.1rem) clamp(2rem,5vw,3.5rem); font-size: clamp(0.95rem,1.6vw,1.2rem); font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif; letter-spacing: -0.01em; }
+    .btn-secondary { background: #111827; color: #4FC3F7; border: 1.5px solid #1e3a5f; border-radius: 14px; padding: clamp(0.8rem,1.8vw,1.1rem); font-size: clamp(0.92rem,1.4vw,1.1rem); font-weight: 600; cursor: pointer; width: 100%; font-family: 'Inter', sans-serif; }
+    .pill { border-radius: 20px; padding: 0.28rem 0.85rem; font-size: clamp(0.68rem,1vw,0.85rem); font-weight: 600; display: inline-block; }
+    .option { background: #111827; border: 1.5px solid #1e2a3a; border-radius: 12px; padding: clamp(0.75rem,1.8vh,1.2rem) clamp(1rem,2vw,1.6rem); text-align: left; color: #c9d1d9; font-size: clamp(0.88rem,1.4vw,1.1rem); cursor: pointer; transition: border-color 0.2s, background 0.2s; line-height: 1.5; font-family: 'Inter', sans-serif; width: 100%; display: block; margin-bottom: clamp(0.5rem,1.2vh,0.9rem); }
+    .option.correct  { background: #0d2818; border-color: #81C784; color: #81C784; }
+    .option.wrong    { background: #2d0f0f; border-color: #F48FB1; color: #F48FB1; }
+    .option.disabled { cursor: default; }
+    .explanation { background: #0d1f3c; border: 1px solid #1e3a5f; border-radius: 12px; padding: clamp(0.9rem,2vw,1.4rem); margin-top: 1rem; display: none; }
+    input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; background: #1e2a3a; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #4FC3F7; cursor: pointer; }
+    .timer-bar  { background: #1e2a3a; border-radius: 4px; height: 5px; overflow: hidden; }
+    .timer-fill { height: 100%; border-radius: 4px; transition: width 1s linear; }
+    .bar-track  { flex: 1; background: #1e2a3a; border-radius: 4px; height: 8px; overflow: hidden; }
+    .bar-fill   { height: 100%; border-radius: 4px; }
+
+    /* ── DINO BASE ── */
+    .dino { font-size: clamp(4.5rem,11vw,8rem); display: inline-block; line-height: 1; }
+
+    /* ── SARCASTIC ANIMATIONS ── */
+    @keyframes flipIn {
+      0%   { transform: rotate(180deg) scale(0.4); opacity: 0; }
+      55%  { transform: rotate(-12deg) scale(1.06); opacity: 1; }
+      75%  { transform: rotate(6deg) scale(0.97); }
+      100% { transform: rotate(0deg) scale(1); opacity: 1; }
+    }
+    @keyframes slowBob {
+      0%,100% { transform: translateY(0) rotate(-4deg); }
+      50%     { transform: translateY(-14px) rotate(4deg); }
+    }
+    /* chain: flip in → then slow bob forever */
+    .dino-sarcastic { animation: flipIn 1.3s ease-out forwards, slowBob 2.8s ease-in-out 1.3s infinite; filter: grayscale(30%); }
+
+    @keyframes fadeUpSlow {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-slow-1 { opacity: 0; animation: fadeUpSlow 0.9s ease forwards; animation-delay: 1.5s; }
+    .fade-slow-2 { opacity: 0; animation: fadeUpSlow 0.9s ease forwards; animation-delay: 2.0s; }
+    .fade-slow-3 { opacity: 0; animation: fadeUpSlow 0.9s ease forwards; animation-delay: 2.5s; }
+    @keyframes clapFloat {
+      0%,100% { transform: translateY(0) scale(1); }
+      50%     { transform: translateY(-6px) scale(1.12); }
+    }
+    .clap { display: inline-block; animation: clapFloat 3s ease-in-out infinite; }
+    .clap:nth-child(2) { animation-delay: 0.4s; }
+    .clap:nth-child(3) { animation-delay: 0.8s; }
+
+    /* ── HAPPY ANIMATIONS ── */
+    @keyframes happyBounce {
+      0%,100% { transform: translateY(0) scale(1); }
+      50%     { transform: translateY(-30px) scale(1.1); }
+    }
+    .dino-happy { animation: happyBounce 0.55s ease-in-out infinite; }
+
+    @keyframes bannerDrop {
+      0%   { transform: translateY(-50px) scale(0.8); opacity: 0; }
+      70%  { transform: translateY(6px) scale(1.04); opacity: 1; }
+      100% { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .banner { animation: bannerDrop 0.7s cubic-bezier(.17,.67,.41,1.3) forwards; }
+
+    @keyframes starSpin {
+      0%   { transform: scale(0) rotate(0deg); opacity: 0; }
+      60%  { transform: scale(1.3) rotate(200deg); opacity: 1; }
+      100% { transform: scale(1) rotate(360deg); opacity: 1; }
+    }
+    .star { display: inline-block; font-size: clamp(1.5rem,3vw,2.5rem); }
+    .star:nth-child(1) { animation: starSpin 0.6s ease-out 0.1s both; }
+    .star:nth-child(3) { animation: starSpin 0.6s ease-out 0.3s both; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up-1 { opacity: 0; animation: fadeUp 0.6s ease forwards; animation-delay: 0.5s; }
+    .fade-up-2 { opacity: 0; animation: fadeUp 0.6s ease forwards; animation-delay: 0.8s; }
+
+    /* ── PERFECT ANIMATIONS ── */
+    @keyframes wildDance {
+      0%   { transform: rotate(0deg)   scale(1)    translateY(0);    }
+      20%  { transform: rotate(22deg)  scale(1.22) translateY(-22px);}
+      40%  { transform: rotate(-22deg) scale(0.85) translateY(4px);  }
+      60%  { transform: rotate(16deg)  scale(1.15) translateY(-16px);}
+      80%  { transform: rotate(-10deg) scale(1.05) translateY(2px);  }
+      100% { transform: rotate(0deg)   scale(1)    translateY(0);    }
+    }
+    .dino-perfect { animation: wildDance 0.38s ease-in-out infinite; }
+
+    @keyframes rainbowText {
+      0%   { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(360deg); }
+    }
+    .rainbow { background: linear-gradient(135deg,#FFD54F,#4FC3F7,#F48FB1,#81C784,#CE93D8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: rainbowText 2s linear infinite; }
+
+    /* ── CONFETTI ── */
+    @keyframes flyLeft  { from { transform: translateX(-110vw) rotate(0deg);   opacity:1; } to { transform: translateX(60vw)  rotate(800deg);  opacity:0; } }
+    @keyframes flyRight { from { transform: translateX(110vw)  rotate(0deg);   opacity:1; } to { transform: translateX(-60vw) rotate(-800deg); opacity:0; } }
+    .confetti-piece { position: fixed; pointer-events: none; z-index: 999; border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const RAW_QUESTIONS = [
+  { category:"Sprint",       question:"El equipo termina el Sprint y hay tareas que quedaron sin completar. ¿Qué hacen?",                                            options:["Extienden el Sprint hasta terminarlas","Las vuelven al Product Backlog para priorizar en el próximo Sprint","Las marcan como Done igual para no retrasar","El Scrum Master las asigna al siguiente Sprint automáticamente"],  correct:1, explanation:"Las tareas incompletas vuelven al backlog. El Sprint nunca se extiende." },
+  { category:"Daily",        question:"Durante la Daily, un dev empieza a explicar en detalle cómo resolvió un bug técnico complejo. ¿Qué hace el SM?",              options:["Lo deja terminar, es información útil para todos","Lo interrumpe y agenda una conversación técnica aparte después de la Daily","Cancela la Daily y la reprograma","Le pide que lo escriba en el chat del equipo"],                                                                                            correct:1, explanation:"La Daily es de sincronización, máximo 15 minutos. Los temas técnicos van aparte." },
+  { category:"Planning",     question:"En el Sprint Planning, el equipo acepta más tareas de las que puede completar. ¿Cuál es el problema?",                       options:["No hay problema, es mejor apuntar alto","El PO eligió mal las prioridades","El equipo no estimó bien su capacidad real","El SM no moderó bien la reunión"],                                                                                                                                           correct:2, explanation:"El equipo es responsable de estimar su velocidad y comprometerse con lo que realmente puede entregar." },
+  { category:"Review",       question:"¿Quién participa en la Sprint Review?",                                                                                        options:["Solo el equipo de desarrollo","El equipo Scrum y los stakeholders","Solo el PO y el cliente","El equipo Scrum sin stakeholders para no presionar"],                                                                                                                                                 correct:1, explanation:"La Review es abierta: el equipo muestra el incremento a stakeholders y reciben feedback real." },
+  { category:"Retro",        question:"En la Retro, el equipo siempre dice que todo está bien y no propone mejoras. ¿Qué debería hacer el SM?",                     options:["Aceptarlo, si el equipo está conforme está bien","Forzar que cada uno escriba al menos un problema","Usar dinámicas como '¿Qué nos frenó?' para generar reflexión genuina","Cancelar las retros si no sirven"],                                                                                correct:2, explanation:"El SM facilita dinámicas que generen reflexión real. La Retro sin acción concreta no genera mejora continua." },
+  { category:"Sprint",       question:"A mitad del Sprint, el cliente pide agregar una funcionalidad urgente. ¿Qué hace el equipo?",                                 options:["La agrega inmediatamente porque el cliente manda","La rechaza hasta el próximo Sprint sin excepciones","El PO evalúa el impacto y si es crítico puede negociar con el equipo","El SM decide si entra o no al Sprint"],                                                                    correct:2, explanation:"El Sprint es protegido, pero el PO puede negociar cambios con el equipo si hay una razón muy válida." },
+  { category:"Daily",        question:"Un dev dice en la Daily: 'No tengo impedimentos'. Pero llevan 3 días sin avanzar en su tarea. ¿Qué hace el SM?",             options:["Lo deja, él sabe lo que hace","Le pregunta en privado después de la Daily si necesita ayuda","Lo expone frente al equipo para que se comprometa","Lo reporta al PO"],                                                                                                                    correct:1, explanation:"El SM no presiona en público. Habla en privado para entender si hay un impedimento no declarado." },
+  { category:"Planning",     question:"¿Cuál es el objetivo principal del Sprint Planning?",                                                                          options:["Asignar tareas individuales a cada desarrollador","Definir qué se va a construir y cómo se logrará el Sprint Goal","Revisar lo que se hizo en el Sprint anterior","Estimar el tiempo total del proyecto"],                                                                              correct:1, explanation:"El Planning define el Sprint Goal y las tareas del Sprint Backlog que el equipo se compromete a completar." },
+  { category:"Kanban",       question:"¿Cuándo se debe mover una tarea de To Do a In Progress?",                                                                     options:["Cuando el SM lo indica en la Daily","Cuando alguien del equipo empieza a trabajar activamente en ella","Al inicio de cada Sprint automáticamente","Cuando el PO la aprueba"],                                                                                                          correct:1, explanation:"Una tarea pasa a In Progress solo cuando alguien realmente la está trabajando. Esto evita aparentar más avance del real." },
+  { category:"Kanban",       question:"El equipo tiene 8 tareas en In Progress y nadie está terminando nada. ¿Cuál es el problema?",                                 options:["El equipo es muy productivo, más tareas en paralelo es mejor","Hay demasiado trabajo en curso, se viola el límite WIP","El backlog está mal priorizado","La columna Done está vacía porque nadie quiere cerrar tareas"],                                                              correct:1, explanation:"Kanban limita el trabajo en curso (WIP). Demasiadas tareas en paralelo fragmentan el foco y nada llega a Done." },
+  { category:"Kanban",       question:"¿Cuál es la diferencia entre el Backlog y el To Do en un tablero Kanban?",                                                    options:["Son lo mismo, solo tienen nombres distintos","Backlog es todo lo pendiente sin prioridad definida; To Do son las tareas seleccionadas para empezar pronto","Backlog es del PO y To Do es del equipo","To Do es para bugs y Backlog para features"],                               correct:1, explanation:"El Backlog acumula todo lo que existe. El To Do es una selección activa: lo que el equipo ya decidió que va a hacer próximamente." },
+  { category:"Kanban",       question:"Una tarea lleva una semana en In Progress sin avance. ¿Qué debería pasar?",                                                   options:["Nada, cada tarea tiene su propio ritmo","Se elimina del tablero para no generar ruido","Se identifica como bloqueada y el SM investiga el impedimento","Se mueve automáticamente a Done al final de la semana"],                                                              correct:2, explanation:"Las tareas estancadas son una señal de alerta. El SM debe detectarlas y actuar para desbloquear al equipo." },
+  { category:"Scrum Master", question:"Dos devs tienen un conflicto sobre cómo implementar una feature. ¿Qué hace el SM?",                                          options:["Decide él mismo cuál solución técnica es mejor","Ignora el conflicto, el equipo debe resolverlo solo","Facilita una conversación para que el equipo llegue a un consenso","Escala el problema al PO para que decida"],                                                          correct:2, explanation:"El SM no decide por el equipo ni ignora los conflictos. Facilita el diálogo para que el equipo encuentre su propia solución." },
+  { category:"Scrum Master", question:"¿Puede el Scrum Master asignar tareas a los desarrolladores?",                                                                options:["Sí, es parte de su rol de liderazgo","Solo si el PO lo autoriza","No, el equipo se autoorganiza y elige sus propias tareas","Solo durante el Sprint Planning"],                                                                                                              correct:2, explanation:"El SM nunca asigna tareas. El equipo de desarrollo es autoorganizado: cada uno toma las tareas según su capacidad y el Sprint Goal." },
+  { category:"Scrum Master", question:"Es tu primera semana como SM. El equipo llega tarde a todas las ceremonias. ¿Qué hacés?",                                    options:["Los reportás al PO","Cancelás las ceremonias que no respetan","En la próxima Retro abrís la conversación y acuerdan juntos una norma","Empezás solo las reuniones para dar el ejemplo"],                                                                                       correct:2, explanation:"El SM construye cultura de equipo. La Retro es el espacio ideal para acordar normas de forma colaborativa, no impuesta." },
+];
+
+const CAT_COLORS = {
+  "Sprint":"#4FC3F7","Daily":"#81C784","Planning":"#FFB74D",
+  "Review":"#CE93D8","Retro":"#F48FB1","Kanban":"#4DB6AC","Scrum Master":"#FFD54F"
+};
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) { const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+function buildQuestions() {
+  return RAW_QUESTIONS.map(q => {
+    const correctText = q.options[q.correct];
+    const shuffled = shuffle(q.options);
+    return { ...q, options: shuffled, correct: shuffled.indexOf(correctText) };
+  });
+}
+
+const state = { screen:'start', timeLimit:20, questions:[], current:0, selected:null, score:0, answers:[], timer:20, interval:null };
+
+/* ── TIMER ── */
+function startTimer() {
+  clearInterval(state.interval);
+  state.interval = setInterval(() => {
+    state.timer--;
+    if (state.timer <= 0) { clearInterval(state.interval); handleAnswer(null); }
+    else updateTimerDOM();
+  }, 1000);
+}
+
+function updateTimerDOM() {
+  const fill = document.querySelector('.timer-fill');
+  const txt  = document.querySelector('.timer-text');
+  const q    = state.questions[state.current];
+  if (!fill || !q) return;
+  const pct = (state.timer / state.timeLimit) * 100;
+  const alert = state.timer <= 5;
+  fill.style.width      = pct + '%';
+  fill.style.background = alert ? '#F48FB1' : CAT_COLORS[q.category];
+  if (txt) { txt.textContent = '⏱ ' + state.timer + 's'; txt.style.color = alert ? '#F48FB1' : '#8892a4'; }
+}
+
+/* ── ANSWER ── */
+function handleAnswer(idx) {
+  if (state.selected !== null) return;
+  clearInterval(state.interval);
+  const val = idx === null ? -1 : idx;
+  state.selected = val;
+  const q = state.questions[state.current];
+  if (idx === q.correct) state.score++;
+  state.answers.push({ category: q.category, selected: val, correct: q.correct });
+
+  document.querySelectorAll('.option').forEach((btn, i) => {
+    btn.classList.add('disabled');
+    if (i === q.correct)                 btn.classList.add('correct');
+    else if (i === val && val !== q.correct) btn.classList.add('wrong');
+  });
+
+  const exp = document.getElementById('explanation');
+  if (exp) {
+    exp.style.display = 'block';
+    exp.innerHTML = `
+      ${val === -1 ? '<p style="color:#F48FB1;font-size:clamp(0.8rem,1.2vw,1rem);margin-bottom:0.4rem;font-weight:500">⏰ ¡Se acabó el tiempo!</p>' : ''}
+      <p style="color:#60a5fa;font-size:clamp(0.82rem,1.3vw,1rem);margin-bottom:0.9rem;line-height:1.6">💡 ${q.explanation}</p>
+      <button onclick="nextQuestion()" style="background:${CAT_COLORS[q.category]};color:#0d1117;border:none;border-radius:10px;padding:clamp(0.55rem,1.2vw,0.85rem) clamp(1.4rem,3vw,2.2rem);font-weight:700;cursor:pointer;font-size:clamp(0.88rem,1.3vw,1.05rem);font-family:'Inter',sans-serif">
+        ${state.current + 1 >= state.questions.length ? 'Ver resultado →' : 'Siguiente →'}
+      </button>`;
+  }
+}
+
+function nextQuestion() {
+  if (state.current + 1 >= state.questions.length) { state.screen = 'result'; render(); }
+  else { state.current++; state.selected = null; state.timer = state.timeLimit; render(); startTimer(); }
+}
+
+function startQuiz() {
+  clearInterval(state.interval);
+  Object.assign(state, { questions: buildQuestions(), current:0, selected:null, score:0, answers:[], timer:state.timeLimit, screen:'quiz' });
+  render(); startTimer();
+}
+
+function goStart() { clearInterval(state.interval); state.screen = 'start'; render(); }
+
+/* ── RENDER ── */
+function render() {
+  const app = document.getElementById('app');
+  if      (state.screen === 'start')  app.innerHTML = renderStart();
+  else if (state.screen === 'quiz')   app.innerHTML = renderQuiz();
+  else                                app.innerHTML = renderResult();
+}
+
+function renderStart() {
+  return `
+    <div style="width:100%;max-width:min(680px,90vw);display:flex;flex-direction:column;align-items:center;gap:2.5vh">
+      <div style="font-size:clamp(3rem,7vw,5rem)">🦖</div>
+      <h1 style="color:#fff;font-size:clamp(1.6rem,3.5vw,2.6rem);font-weight:700;text-align:center;letter-spacing:-0.02em">Scrum & Kanban Quiz</h1>
+      <p style="color:#8892a4;text-align:center;font-size:clamp(0.85rem,1.4vw,1.05rem);line-height:1.6">
+        15 situaciones reales de un equipo dev<br>Elegí cuánto tiempo por pregunta
+      </p>
+      <div class="card" style="margin-top:0.5vh">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <span style="color:#8892a4;font-size:clamp(0.8rem,1.2vw,1rem);font-weight:500">Tiempo por pregunta</span>
+          <span id="tlabel" style="color:#4FC3F7;font-size:clamp(1rem,2vw,1.5rem);font-weight:700">${state.timeLimit}s</span>
+        </div>
+        <input type="range" min="10" max="60" step="5" value="${state.timeLimit}"
+          oninput="state.timeLimit=+this.value;document.getElementById('tlabel').textContent=this.value+'s'">
+        <div style="display:flex;justify-content:space-between;margin-top:0.5rem">
+          <span style="color:#4a5568;font-size:clamp(0.7rem,1vw,0.85rem)">10s</span>
+          <span style="color:#4a5568;font-size:clamp(0.7rem,1vw,0.85rem)">60s</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:0.45rem;flex-wrap:wrap;justify-content:center">
+        ${Object.entries(CAT_COLORS).map(([cat,c])=>`<span class="pill" style="background:${c}22;color:${c};border:1px solid ${c}55">${cat}</span>`).join('')}
+      </div>
+      <button class="btn-primary" onclick="startQuiz()">Empezar 🚀</button>
+    </div>`;
+}
+
+function renderQuiz() {
+  const q = state.questions[state.current];
+  const cc = CAT_COLORS[q.category];
+  return `
+    <div style="width:100%;max-width:min(780px,92vw);display:flex;flex-direction:column;gap:2vh">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="color:#8892a4;font-size:clamp(0.78rem,1.1vw,1rem);font-weight:500">${state.current+1} / ${state.questions.length}</span>
+        <span class="pill" style="background:${cc}22;color:${cc};border:1px solid ${cc}55">${q.category}</span>
+        <span class="timer-text" style="color:#8892a4;font-size:clamp(0.88rem,1.4vw,1.1rem);font-weight:700">⏱ ${state.timer}s</span>
+      </div>
+      <div class="timer-bar"><div class="timer-fill" style="width:${(state.timer/state.timeLimit)*100}%;background:${cc}"></div></div>
+      <p style="color:#e8edf5;font-size:clamp(1rem,2vw,1.45rem);line-height:1.6;font-weight:600">${q.question}</p>
+      <div>
+        ${q.options.map((opt,i)=>`
+          <button class="option" onclick="handleAnswer(${i})">
+            <span style="margin-right:0.6rem;opacity:0.35;font-weight:700">${['A','B','C','D'][i]}.</span>${opt}
+          </button>`).join('')}
+      </div>
+      <div id="explanation" class="explanation"></div>
+    </div>`;
+}
+
+function renderBreakdown() {
+  return `<div class="card" style="width:100%;margin-top:1vh">
+    ${Object.keys(CAT_COLORS).map(cat=>{
+      const total   = state.answers.filter(a=>a.category===cat).length;
+      const correct = state.answers.filter(a=>a.category===cat&&a.selected===a.correct).length;
+      if (!total) return '';
+      return `<div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.75rem">
+        <span style="color:${CAT_COLORS[cat]};width:clamp(80px,10vw,110px);font-size:clamp(0.72rem,1vw,0.9rem);font-weight:600;flex-shrink:0">${cat}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(correct/total)*100}%;background:${CAT_COLORS[cat]}"></div></div>
+        <span style="color:#8892a4;font-size:clamp(0.74rem,1vw,0.9rem);flex-shrink:0;width:2.5rem;text-align:right">${correct}/${total}</span>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+/* ── RESULT SCREENS ── */
+function renderResult() {
+  const pct = Math.round((state.score / state.questions.length) * 100);
+  if (pct === 100) { setTimeout(spawnConfetti, 120); return renderPerfect(); }
+  if (pct >= 51)   return renderGood();
+  return renderSarcastic();
+}
+
+function renderSarcastic() {
+  return `
+    <div style="width:100%;max-width:min(680px,90vw);display:flex;flex-direction:column;align-items:center;gap:2.5vh;text-align:center">
+      <div class="dino dino-sarcastic">🦖</div>
+
+      <div class="fade-slow-1">
+        <div style="font-size:clamp(1.6rem,3.5vw,2.8rem)">
+          <span class="clap">👏</span><span class="clap">👏</span><span class="clap">👏</span>
+        </div>
+        <div style="color:#8892a4;font-size:clamp(0.68rem,1vw,0.82rem);letter-spacing:0.18em;font-weight:500;margin-top:0.3rem">
+          ...   l  e  n  t  o  .   m  u  y   l  e  n  t  o  .
+        </div>
+      </div>
+
+      <div class="fade-slow-2">
+        <h2 style="color:#fff;font-size:clamp(1.5rem,3.5vw,2.5rem);font-weight:700;letter-spacing:-0.02em">
+          ${state.score} / ${state.questions.length} correctas
+        </h2>
+      </div>
+
+      <div class="fade-slow-3">
+        <p style="color:#8892a4;font-size:clamp(0.92rem,1.5vw,1.15rem);line-height:1.7">
+          Bueno... algo es algo. 🤷<br>
+          <span style="font-size:clamp(0.78rem,1.1vw,0.95rem);opacity:0.7">
+            El backlog te necesita. Y también este quiz.
+          </span>
+        </p>
+      </div>
+
+      ${renderBreakdown()}
+      <button class="btn-secondary" onclick="goStart()" style="margin-top:0.5vh">Volver a intentarlo 🔁</button>
+    </div>`;
+}
+
+function renderGood() {
+  return `
+    <div style="width:100%;max-width:min(680px,90vw);display:flex;flex-direction:column;align-items:center;gap:2.5vh;text-align:center">
+      <div style="display:flex;align-items:center;gap:0.6rem">
+        <span class="star">⭐</span>
+        <span class="dino dino-happy">🦕</span>
+        <span class="star">⭐</span>
+      </div>
+
+      <div class="banner" style="font-size:clamp(1.8rem,4.5vw,3.2rem);font-weight:700;color:#FFD54F">¡FELICIDADES!</div>
+
+      <h2 class="fade-up-1" style="color:#fff;font-size:clamp(1.5rem,3.5vw,2.5rem);font-weight:700;letter-spacing:-0.02em">
+        ${state.score} / ${state.questions.length} correctas
+      </h2>
+
+      <p class="fade-up-2" style="color:#8892a4;font-size:clamp(0.92rem,1.5vw,1.15rem);line-height:1.7">
+        ¡Ya casi sos un Scrum Master de verdad! 🎉<br>
+        <span style="font-size:clamp(0.78rem,1.1vw,0.95rem)">
+          Con un poco más de práctica, el equipo está en buenas manos.
+        </span>
+      </p>
+
+      ${renderBreakdown()}
+      <button class="btn-secondary" onclick="goStart()" style="margin-top:0.5vh">Jugar de nuevo 🔄</button>
+    </div>`;
+}
+
+function renderPerfect() {
+  return `
+    <div style="width:100%;max-width:min(680px,90vw);display:flex;flex-direction:column;align-items:center;gap:2.5vh;text-align:center">
+      <div class="dino dino-perfect">🦖</div>
+
+      <div class="banner">
+        <span class="rainbow" style="font-size:clamp(2rem,5vw,3.8rem);font-weight:700">¡PERFECTO! 💯</span>
+      </div>
+
+      <h2 style="color:#FFD54F;font-size:clamp(1.5rem,3.5vw,2.5rem);font-weight:700;letter-spacing:-0.02em">
+        ${state.score} / ${state.questions.length} correctas
+      </h2>
+
+      <p style="color:#8892a4;font-size:clamp(0.92rem,1.5vw,1.15rem);line-height:1.7">
+        🔥 ¡El equipo está en las MEJORES manos! 🔥<br>
+        <span style="font-size:clamp(0.78rem,1.1vw,0.95rem)">
+          Dominás Scrum y Kanban de principio a fin.
+        </span>
+      </p>
+
+      ${renderBreakdown()}
+      <button class="btn-secondary" onclick="goStart()" style="margin-top:0.5vh">Jugar de nuevo 🔄</button>
+    </div>`;
+}
+
+/* ── CONFETTI ── */
+function spawnConfetti() {
+  const colors = ['#4FC3F7','#81C784','#FFB74D','#CE93D8','#F48FB1','#4DB6AC','#FFD54F','#ff6b6b','#fff'];
+  for (let i = 0; i < 70; i++) {
+    const el       = document.createElement('div');
+    el.className   = 'confetti-piece';
+    const fromLeft = i % 2 === 0;
+    const size     = Math.random() * 14 + 6;
+    const top      = Math.random() * 85 + 5;
+    const delay    = Math.random() * 1.8;
+    const dur      = Math.random() * 1.8 + 1.8;
+    const color    = colors[Math.floor(Math.random() * colors.length)];
+    const round    = Math.random() > 0.45;
+    el.style.cssText = `width:${size}px;height:${size}px;background:${color};top:${top}vh;${fromLeft?'left:0':'right:0'};border-radius:${round?'50%':'3px'};animation:${fromLeft?'flyLeft':'flyRight'} ${dur}s ease-out ${delay}s forwards;`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), (dur + delay + 0.5) * 1000);
+  }
+}
+
+render();
+</script>
+</body>
+</html>
