@@ -59,8 +59,6 @@ También podés publicarlo con GitHub Pages para acceder desde cualquier disposi
 ## 🛠️ Tecnologías
 
 - HTML5
-- React 18 (vía CDN)
-- Babel Standalone (vía CDN)
 - CSS en línea
 
 Sin bundlers, sin `npm install`, sin configuración.
@@ -88,12 +86,8 @@ Abrí `index.html` y buscá el array `questions`. Cada pregunta tiene esta estru
 
 ---
 
-## 👥 Equipo
+## 👥 Contribuciones
 
-Desarrollado por el equipo de la **Comisión SP1 2026** como parte de las actividades del Scrum Professional Bootcamp de Rolling Code School.
+Desarrollado para la **Comisión SP1 2026** como parte de las actividades del Scrum Professional Bootcamp de Rolling Code School.
 
 - Facundo López
-- Lucía David
-- Juan Ignacio Burgos
-- Noelia Sotelo Bertini
-- Nadia Medina
